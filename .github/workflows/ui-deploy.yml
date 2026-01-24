@@ -1,0 +1,76 @@
+name: Deploy UI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/golf-scheduler-ui/**'
+      - '.github/workflows/ui-deploy.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/golf-scheduler-ui/**'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20.x'
+  AZURE_WEBAPP_NAME: 'golf-scheduler-ui'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: src/golf-scheduler-ui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: src/golf-scheduler-ui
+
+      - name: Build
+        run: npm run build
+        working-directory: src/golf-scheduler-ui
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_B2C_CLIENT_ID: ${{ vars.VITE_B2C_CLIENT_ID }}
+          VITE_B2C_AUTHORITY: ${{ vars.VITE_B2C_AUTHORITY }}
+          VITE_B2C_KNOWN_AUTHORITIES: ${{ vars.VITE_B2C_KNOWN_AUTHORITIES }}
+          VITE_B2C_REDIRECT_URI: ${{ vars.VITE_B2C_REDIRECT_URI }}
+          VITE_B2C_SCOPES: ${{ vars.VITE_B2C_SCOPES }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-package
+          path: src/golf-scheduler-ui/dist
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ui-package
+          path: ./dist
+
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_UI_PUBLISH_PROFILE }}
+          package: ./dist
