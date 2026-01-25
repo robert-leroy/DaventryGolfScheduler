@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Bar } from 'vue-chartjs';
+import { Chart } from 'vue-chartjs';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
+  BarController,
+  LineController,
   BarElement,
   LineElement,
   PointElement,
@@ -12,11 +14,14 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import type { ChartData, ChartOptions } from 'chart.js';
 import type { TeeTimeListItem } from '@/types';
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
+  BarController,
+  LineController,
   BarElement,
   LineElement,
   PointElement,
@@ -36,7 +41,7 @@ interface DayStats {
   takenSlots: number;
 }
 
-const chartData = computed(() => {
+const chartData = computed<ChartData<'bar' | 'line', number[], string>>(() => {
   // Aggregate tee times by day
   const byDay = new Map<string, DayStats>();
 
@@ -91,33 +96,21 @@ const chartData = computed(() => {
         order: 1,
       },
     ],
-  };
+  } as ChartData<'bar' | 'line', number[], string>;
 });
 
-const chartOptions = {
+const chartOptions: ChartOptions<'bar'> = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      position: 'top' as const,
+      position: 'top',
     },
     title: {
       display: true,
       text: 'Tee Time Availability',
       font: {
         size: 18,
-      },
-    },
-    tooltip: {
-      callbacks: {
-        afterBody: (context: { dataIndex: number }[]) => {
-          const idx = context[0]?.dataIndex;
-          if (idx === undefined) return '';
-          const total = chartData.value.datasets[0].data[idx];
-          const taken = chartData.value.datasets[1].data[idx];
-          const available = total - taken;
-          return `Available: ${available}`;
-        },
       },
     },
   },
@@ -138,7 +131,7 @@ const chartOptions = {
 
 <template>
   <div class="chart-container">
-    <Bar v-if="teeTimes.length > 0" :data="chartData" :options="chartOptions" />
+    <Chart v-if="teeTimes.length > 0" type="bar" :data="chartData" :options="chartOptions" />
     <div v-else class="no-data">
       <p>No tee times scheduled yet.</p>
     </div>
