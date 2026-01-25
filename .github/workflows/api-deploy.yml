@@ -2,12 +2,12 @@ name: Deploy API
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'src/GolfScheduler.Api/**'
       - '.github/workflows/api-deploy.yml'
   pull_request:
-    branches: [main]
+    branches: [master]
     paths:
       - 'src/GolfScheduler.Api/**'
   workflow_dispatch:
@@ -23,7 +23,7 @@ on:
 
 env:
   DOTNET_VERSION: '9.0.x'
-  AZURE_WEBAPP_NAME: 'api-golfscheduler-${{ github.event.inputs.environment || ''dev'' }}'
+  AZURE_WEBAPP_NAME: 'api-golfscheduler-${{ github.event.inputs.environment || 'dev' }}'
 
 jobs:
   build:

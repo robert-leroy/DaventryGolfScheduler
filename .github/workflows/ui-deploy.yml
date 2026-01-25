@@ -2,13 +2,13 @@ name: Deploy UI
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'src/golf-scheduler-ui/**'
       - '.github/workflows/ui-deploy.yml'
   pull_request:
     types: [opened, synchronize, reopened, closed]
-    branches: [main]
+    branches: [master]
     paths:
       - 'src/golf-scheduler-ui/**'
   workflow_dispatch:
