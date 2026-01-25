@@ -22,8 +22,8 @@ on:
           - prod
 
 env:
-  DOTNET_VERSION: '9.0.x'
-  AZURE_WEBAPP_NAME: 'api-golfscheduler-${{ github.event.inputs.environment || 'dev' }}'
+  DOTNET_VERSION: "9.0.x"
+  AZURE_WEBAPP_NAME: "api-golfscheduler-${{ github.event.inputs.environment || 'dev' }}"
 
 jobs:
   build:
@@ -62,8 +62,8 @@ jobs:
     needs: build
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     environment:
-      name: ${{ github.event.inputs.environment || 'dev' }}
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+      name: "${{ github.event.inputs.environment || 'dev' }}"
+      url: "${{ steps.deploy-to-webapp.outputs.webapp-url }}"
 
     steps:
       - name: Download artifact
@@ -88,6 +88,6 @@ jobs:
         run: |
           az webapp config appsettings list \
             --name ${{ env.AZURE_WEBAPP_NAME }} \
-            --resource-group rg-golfscheduler-${{ github.event.inputs.environment || 'dev' }} \
+            --resource-group "rg-golfscheduler-${{ github.event.inputs.environment || 'dev' }}" \
             --query "[?name=='ConnectionStrings__DefaultConnection'].value" -o tsv
         continue-on-error: true
