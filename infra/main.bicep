@@ -154,6 +154,9 @@ resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2023-03-01-pr
     highAvailability: {
       mode: 'Disabled'
     }
+    network: {
+      publicNetworkAccess: 'Enabled'
+    }
   }
 }
 
@@ -170,10 +173,10 @@ resource postgresDatabase 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2
 // PostgreSQL Firewall - Allow Azure Services
 resource postgresFirewallAzure 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2023-03-01-preview' = {
   parent: postgresServer
-  name: 'AllowAzureServices'
+  name: 'AllowAllAzureServices'
   properties: {
     startIpAddress: '0.0.0.0'
-    endIpAddress: '0.0.0.0'
+    endIpAddress: '255.255.255.255'
   }
 }
 

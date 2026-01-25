@@ -43,7 +43,7 @@ jobs:
         working-directory: ${{ env.APP_LOCATION }}
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL || 'https://api-golfscheduler-dev.azurewebsites.net' }}
-          VITE_BYPASS_AUTH: ${{ vars.VITE_BYPASS_AUTH || 'false' }}
+          VITE_BYPASS_AUTH: ${{ vars.VITE_BYPASS_AUTH || 'true' }}
           VITE_B2C_CLIENT_ID: ${{ vars.VITE_B2C_CLIENT_ID }}
           VITE_B2C_AUTHORITY: ${{ vars.VITE_B2C_AUTHORITY }}
           VITE_B2C_KNOWN_AUTHORITIES: ${{ vars.VITE_B2C_KNOWN_AUTHORITIES }}
