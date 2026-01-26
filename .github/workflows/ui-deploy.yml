@@ -19,6 +19,7 @@ env:
 
 jobs:
   build_and_deploy:
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
     runs-on: ubuntu-latest
     name: Build and Deploy
 
@@ -49,13 +50,21 @@ jobs:
           VITE_B2C_REDIRECT_URI: ${{ vars.VITE_B2C_REDIRECT_URI }}
           VITE_B2C_SCOPES: ${{ vars.VITE_B2C_SCOPES }}
 
+      - name: Verify build output
+        run: |
+          echo "=== Checking dist folder ==="
+          ls -la ${{ env.APP_LOCATION }}/dist/
+          echo "=== index.html content ==="
+          cat ${{ env.APP_LOCATION }}/dist/index.html
+
       - name: Deploy to Azure Static Web App
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: 'upload'
-          app_location: 'src/golf-scheduler-ui/dist'
+          app_location: ${{ env.APP_LOCATION }}
+          output_location: 'dist'
           skip_app_build: true
           skip_api_build: true
 
