@@ -16,6 +16,7 @@ import {
 } from 'chart.js';
 import type { ChartData, ChartOptions } from 'chart.js';
 import type { TeeTimeListItem } from '@/types';
+import { parseLocalDate } from '@/utils/dateUtils';
 
 ChartJS.register(
   CategoryScale,
@@ -48,7 +49,7 @@ const chartData = computed<ChartData<'bar' | 'line', number[], string>>(() => {
   for (const tt of props.teeTimes) {
     const date = tt.teeDate;
     if (!byDay.has(date)) {
-      const dateObj = new Date(date);
+      const dateObj = parseLocalDate(date);
       const label = dateObj.toLocaleDateString('en-US', {
         weekday: 'short',
         month: 'short',

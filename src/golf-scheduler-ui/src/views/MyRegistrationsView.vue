@@ -4,6 +4,7 @@ import { RouterLink } from 'vue-router';
 import { useRegistrationStore } from '@/stores/registrationStore';
 import { useTeeTimeStore } from '@/stores/teeTimeStore';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
+import { parseLocalDate } from '@/utils/dateUtils';
 
 const registrationStore = useRegistrationStore();
 const teeTimeStore = useTeeTimeStore();
@@ -13,7 +14,7 @@ onMounted(async () => {
 });
 
 function formatDate(dateString: string) {
-  const date = new Date(dateString);
+  const date = parseLocalDate(dateString);
   return date.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',

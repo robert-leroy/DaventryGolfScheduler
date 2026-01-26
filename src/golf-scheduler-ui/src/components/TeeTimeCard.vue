@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import type { TeeTimeListItem } from '@/types';
+import { parseLocalDate } from '@/utils/dateUtils';
 
 const props = defineProps<{
   teeTime: TeeTimeListItem;
@@ -13,7 +14,7 @@ const emit = defineEmits<{
 }>();
 
 const formattedDate = computed(() => {
-  const date = new Date(props.teeTime.teeDate);
+  const date = parseLocalDate(props.teeTime.teeDate);
   return date.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',

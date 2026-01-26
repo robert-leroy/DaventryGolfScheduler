@@ -5,6 +5,7 @@ import { useTeeTimeStore } from '@/stores/teeTimeStore';
 import { useAuthStore } from '@/stores/authStore';
 import RegistrationList from '@/components/RegistrationList.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
+import { parseLocalDate } from '@/utils/dateUtils';
 
 const route = useRoute();
 const router = useRouter();
@@ -15,7 +16,7 @@ const teeTime = computed(() => teeTimeStore.currentTeeTime);
 
 const formattedDate = computed(() => {
   if (!teeTime.value) return '';
-  const date = new Date(teeTime.value.teeDate);
+  const date = parseLocalDate(teeTime.value.teeDate);
   return date.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',

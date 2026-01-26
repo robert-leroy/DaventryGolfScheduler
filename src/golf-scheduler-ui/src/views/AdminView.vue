@@ -5,6 +5,7 @@ import { useTeeTimeStore } from '@/stores/teeTimeStore';
 import TeeTimeForm from '@/components/TeeTimeForm.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 import type { TeeTimeCreate, TeeTimeListItem } from '@/types';
+import { parseLocalDate } from '@/utils/dateUtils';
 
 const teeTimeStore = useTeeTimeStore();
 
@@ -16,7 +17,7 @@ onMounted(async () => {
 });
 
 function formatDate(dateString: string) {
-  const date = new Date(dateString);
+  const date = parseLocalDate(dateString);
   return date.toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',

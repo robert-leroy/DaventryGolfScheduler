@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import { teeTimeApi } from '@/services/api';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 import type { GolfersByDay } from '@/types';
+import { parseLocalDate } from '@/utils/dateUtils';
 
 const golfersByDay = ref<GolfersByDay[]>([]);
 const loading = ref(false);
@@ -26,7 +27,7 @@ async function fetchGolfersByDay() {
 }
 
 function formatDate(dateString: string) {
-  const date = new Date(dateString);
+  const date = parseLocalDate(dateString);
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
