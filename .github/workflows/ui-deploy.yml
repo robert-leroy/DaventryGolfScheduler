@@ -15,7 +15,7 @@ on:
 
 env:
   NODE_VERSION: '20.x'
-  APP_LOCATION: 'src/golf-scheduler-ui'
+  UI_SOURCE_DIR: 'src/golf-scheduler-ui'
 
 jobs:
   build_and_deploy:
@@ -36,11 +36,11 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        working-directory: ${{ env.APP_LOCATION }}
+        working-directory: ${{ env.UI_SOURCE_DIR }}
 
       - name: Build
         run: npm run build
-        working-directory: ${{ env.APP_LOCATION }}
+        working-directory: ${{ env.UI_SOURCE_DIR }}
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL || 'https://api-golfscheduler-dev.azurewebsites.net' }}
           VITE_BYPASS_AUTH: ${{ vars.VITE_BYPASS_AUTH || 'true' }}
@@ -53,14 +53,14 @@ jobs:
       - name: Verify build output
         run: |
           echo "=== Checking dist folder ==="
-          ls -la ${{ env.APP_LOCATION }}/dist/
+          ls -la ${{ env.UI_SOURCE_DIR }}/dist/
           echo "=== index.html content ==="
-          cat ${{ env.APP_LOCATION }}/dist/index.html
+          cat ${{ env.UI_SOURCE_DIR }}/dist/index.html
 
       - name: Copy dist to deploy folder
         run: |
           mkdir -p deploy
-          cp -r ${{ env.APP_LOCATION }}/dist/* deploy/
+          cp -r ${{ env.UI_SOURCE_DIR }}/dist/* deploy/
           echo "=== Deploy folder contents ==="
           ls -la deploy/
 
