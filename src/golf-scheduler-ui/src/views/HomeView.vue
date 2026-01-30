@@ -35,9 +35,9 @@ async function handleCancel(id: string) {
       <p class="hero-subtitle">Sign up for weekly tee times with your neighbors</p>
 
       <div class="hero-actions">
-        <button @click="authStore.login()" class="btn btn-primary btn-lg">
+        <RouterLink to="/login" class="btn btn-primary btn-lg">
           Sign In to Get Started
-        </button>
+        </RouterLink>
       </div>
     </section>
 

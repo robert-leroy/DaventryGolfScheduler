@@ -1,106 +1,87 @@
-import { PublicClientApplication, Configuration, AccountInfo, InteractionRequiredAuthError } from '@azure/msal-browser';
+const TOKEN_KEY = 'golf_scheduler_token';
+const REFRESH_TOKEN_KEY = 'golf_scheduler_refresh_token';
+const USER_KEY = 'golf_scheduler_user';
 
-const msalConfig: Configuration = {
-  auth: {
-    clientId: import.meta.env.VITE_B2C_CLIENT_ID || '',
-    authority: import.meta.env.VITE_B2C_AUTHORITY || '',
-    knownAuthorities: [import.meta.env.VITE_B2C_KNOWN_AUTHORITIES || ''],
-    redirectUri: import.meta.env.VITE_B2C_REDIRECT_URI || 'http://localhost:5173',
-    postLogoutRedirectUri: import.meta.env.VITE_B2C_REDIRECT_URI || 'http://localhost:5173',
-  },
-  cache: {
-    cacheLocation: 'localStorage',
-    storeAuthStateInCookie: false,
-  },
-};
+export interface UserProfile {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  phone: string | null;
+  handicap: number | null;
+  isAdmin: boolean;
+  createdAt: string;
+}
 
-const loginRequest = {
-  scopes: [import.meta.env.VITE_B2C_SCOPES || ''],
-};
+export interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: string;
+  user: UserProfile;
+}
 
-const tokenRequest = {
-  scopes: [import.meta.env.VITE_B2C_SCOPES || ''],
-};
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  handicap?: number;
+}
 
 class AuthService {
-  private msalInstance: PublicClientApplication;
-  private initialized: boolean = false;
+  private accessToken: string | null = null;
+  private refreshToken: string | null = null;
 
   constructor() {
-    this.msalInstance = new PublicClientApplication(msalConfig);
+    this.loadTokensFromStorage();
   }
 
-  async initialize(): Promise<void> {
-    if (this.initialized) return;
-    await this.msalInstance.initialize();
-    await this.msalInstance.handleRedirectPromise();
-    this.initialized = true;
+  private loadTokensFromStorage(): void {
+    this.accessToken = localStorage.getItem(TOKEN_KEY);
+    this.refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
   }
 
-  async login(): Promise<void> {
-    await this.initialize();
-    try {
-      await this.msalInstance.loginPopup(loginRequest);
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    }
+  saveTokens(accessToken: string, refreshToken: string): void {
+    this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
+    localStorage.setItem(TOKEN_KEY, accessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
   }
 
-  async logout(): Promise<void> {
-    await this.initialize();
-    const account = this.getAccount();
-    if (account) {
-      await this.msalInstance.logoutPopup({
-        account,
-        postLogoutRedirectUri: msalConfig.auth.postLogoutRedirectUri,
-      });
-    }
+  saveUser(user: UserProfile): void {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
   }
 
-  getAccount(): AccountInfo | null {
-    const accounts = this.msalInstance.getAllAccounts();
-    return accounts.length > 0 ? accounts[0] : null;
+  clearTokens(): void {
+    this.accessToken = null;
+    this.refreshToken = null;
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  }
+
+  getAccessToken(): string | null {
+    return this.accessToken;
+  }
+
+  getRefreshToken(): string | null {
+    return this.refreshToken;
   }
 
   isAuthenticated(): boolean {
-    return this.getAccount() !== null;
+    return this.accessToken !== null;
   }
 
-  async getAccessToken(): Promise<string | null> {
-    await this.initialize();
-    const account = this.getAccount();
-    if (!account) return null;
-
-    try {
-      const response = await this.msalInstance.acquireTokenSilent({
-        ...tokenRequest,
-        account,
-      });
-      return response.accessToken;
-    } catch (error) {
-      if (error instanceof InteractionRequiredAuthError) {
-        try {
-          const response = await this.msalInstance.acquireTokenPopup(tokenRequest);
-          return response.accessToken;
-        } catch (popupError) {
-          console.error('Token acquisition failed:', popupError);
-          return null;
-        }
-      }
-      console.error('Token acquisition failed:', error);
-      return null;
-    }
-  }
-
-  getUserInfo(): { name: string; email: string } | null {
-    const account = this.getAccount();
-    if (!account) return null;
-
-    return {
-      name: account.name || account.username || 'Unknown',
-      email: (account.idTokenClaims?.emails as string[])?.[0] || account.username || '',
-    };
+  getStoredUser(): UserProfile | null {
+    const userJson = localStorage.getItem(USER_KEY);
+    return userJson ? JSON.parse(userJson) : null;
   }
 }
 

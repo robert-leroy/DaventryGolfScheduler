@@ -10,10 +10,18 @@ public class User
     [Column("id")]
     public Guid Id { get; set; }
 
-    [Required]
     [MaxLength(255)]
-    [Column("azure_ad_b2c_id")]
-    public string AzureAdB2CId { get; set; } = string.Empty;
+    [Column("password_hash")]
+    public string? PasswordHash { get; set; }
+
+    [Column("failed_login_count")]
+    public int FailedLoginCount { get; set; } = 0;
+
+    [Column("lockout_end")]
+    public DateTime? LockoutEnd { get; set; }
+
+    [Column("last_login_at")]
+    public DateTime? LastLoginAt { get; set; }
 
     [Required]
     [MaxLength(255)]

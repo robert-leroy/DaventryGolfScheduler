@@ -13,45 +13,15 @@ public class UserService : IUserService
         _context = context;
     }
 
-    public async Task<User> GetOrCreateUserAsync(string azureAdB2CId, string email, string displayName)
-    {
-        var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.AzureAdB2CId == azureAdB2CId);
-
-        if (user == null)
-        {
-            // Parse display name into first/last name
-            var nameParts = displayName.Split(' ', 2);
-            var firstName = nameParts[0];
-            var lastName = nameParts.Length > 1 ? nameParts[1] : "";
-
-            user = new User
-            {
-                Id = Guid.NewGuid(),
-                AzureAdB2CId = azureAdB2CId,
-                Email = email,
-                FirstName = firstName,
-                LastName = lastName,
-                IsAdmin = false,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-        }
-
-        return user;
-    }
-
     public async Task<User?> GetUserByIdAsync(Guid id)
     {
         return await _context.Users.FindAsync(id);
     }
 
-    public async Task<User?> GetUserByAzureIdAsync(string azureAdB2CId)
+    public async Task<User?> GetUserByEmailAsync(string email)
     {
         return await _context.Users
-            .FirstOrDefaultAsync(u => u.AzureAdB2CId == azureAdB2CId);
+            .FirstOrDefaultAsync(u => u.Email == email);
     }
 
     public async Task<List<User>> GetAllUsersAsync()
@@ -95,7 +65,6 @@ public class UserService : IUserService
         var user = new User
         {
             Id = Guid.NewGuid(),
-            AzureAdB2CId = $"manual-{Guid.NewGuid()}", // For manually created users
             Email = email,
             FirstName = firstName,
             LastName = lastName,

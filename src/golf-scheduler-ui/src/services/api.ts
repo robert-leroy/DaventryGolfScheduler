@@ -1,5 +1,6 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { authService } from './authService';
+import type { AuthResponse, RegisterRequest } from './authService';
 import type { TeeTime, TeeTimeListItem, TeeTimeCreate, TeeTimeUpdate, User, UserProfile, UserProfileUpdate, UserCreate, UserUpdate, UserRegistration, GolfersByDay } from '@/types';
 
 const apiClient: AxiosInstance = axios.create({
@@ -9,9 +10,10 @@ const apiClient: AxiosInstance = axios.create({
   },
 });
 
+// Request interceptor - attach token synchronously
 apiClient.interceptors.request.use(
-  async (config) => {
-    const token = await authService.getAccessToken();
+  (config: InternalAxiosRequestConfig) => {
+    const token = authService.getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -20,15 +22,81 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Response interceptor - handle 401 and token refresh
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      authService.logout();
+  async (error) => {
+    const originalRequest = error.config;
+
+    // If 401 and we haven't already retried
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      const refreshToken = authService.getRefreshToken();
+      if (refreshToken) {
+        try {
+          // Try to refresh the token
+          const response = await axios.post<AuthResponse>(
+            `${import.meta.env.VITE_API_URL || '/api'}/api/auth/refresh`,
+            { refreshToken }
+          );
+
+          const { accessToken, refreshToken: newRefreshToken, user } = response.data;
+          authService.saveTokens(accessToken, newRefreshToken);
+          authService.saveUser(user);
+
+          // Retry the original request with new token
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          return apiClient(originalRequest);
+        } catch {
+          // Refresh failed, clear tokens
+          authService.clearTokens();
+        }
+      }
+
+      // No refresh token or refresh failed - redirect to login
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
+
     return Promise.reject(error);
   }
 );
+
+export const authApi = {
+  login: async (email: string, password: string): Promise<AuthResponse> => {
+    const response = await apiClient.post<AuthResponse>('/api/auth/login', { email, password });
+    const { accessToken, refreshToken, user } = response.data;
+    authService.saveTokens(accessToken, refreshToken);
+    authService.saveUser(user);
+    return response.data;
+  },
+
+  register: async (data: RegisterRequest): Promise<AuthResponse> => {
+    const response = await apiClient.post<AuthResponse>('/api/auth/register', data);
+    const { accessToken, refreshToken, user } = response.data;
+    authService.saveTokens(accessToken, refreshToken);
+    authService.saveUser(user);
+    return response.data;
+  },
+
+  logout: async (): Promise<void> => {
+    const refreshToken = authService.getRefreshToken();
+    if (refreshToken) {
+      try {
+        await apiClient.post('/api/auth/logout', { refreshToken });
+      } catch {
+        // Ignore errors on logout
+      }
+    }
+    authService.clearTokens();
+  },
+
+  changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+    await apiClient.post('/api/auth/change-password', { currentPassword, newPassword });
+  },
+};
 
 export const teeTimeApi = {
   getAll: async (): Promise<TeeTimeListItem[]> => {

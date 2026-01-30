@@ -2,6 +2,8 @@
 
 A web application for scheduling weekly golf tee times for a group of neighbors. Admins update the weekly schedule, and users can view and register for available tee times.
 
+This entire project has been developed and managed by Anthropic's Claude Code AI.  I needed a use case to explore and learn more about Vibe Coding.  This has been my best experience yet.  My plan is to continue to maintain and expand this application using Claude.
+
 ## Technology Stack
 
 - **Frontend**: Vue 3 (Composition API) + TypeScript + Vite + Pinia

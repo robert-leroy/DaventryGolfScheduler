@@ -11,6 +11,18 @@ const router = createRouter({
       component: HomeView,
     },
     {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/views/LoginView.vue'),
+      meta: { guestOnly: true },
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('@/views/RegisterView.vue'),
+      meta: { guestOnly: true },
+    },
+    {
       path: '/tee-times',
       name: 'tee-times',
       component: () => import('@/views/TeeTimesView.vue'),
@@ -62,11 +74,22 @@ router.beforeEach(async (to, _from, next) => {
     await authStore.initialize();
   }
 
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+  // Clear any login errors when navigating
+  authStore.clearError();
+
+  // Redirect authenticated users away from guest-only pages (login, register)
+  if (to.meta.guestOnly && authStore.isAuthenticated) {
     next({ name: 'home' });
     return;
   }
 
+  // Redirect unauthenticated users to login with return URL
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    next({ name: 'login', query: { redirect: to.fullPath } });
+    return;
+  }
+
+  // Redirect non-admin users away from admin pages
   if (to.meta.requiresAdmin && !authStore.isAdmin) {
     next({ name: 'home' });
     return;

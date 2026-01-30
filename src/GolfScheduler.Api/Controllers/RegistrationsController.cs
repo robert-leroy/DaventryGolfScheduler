@@ -50,17 +50,12 @@ public class RegistrationsController : ControllerBase
 
     private async Task<User?> GetCurrentUserAsync()
     {
-        var azureId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? User.FindFirstValue("sub");
-        if (string.IsNullOrEmpty(azureId)) return null;
 
-        var email = User.FindFirstValue(ClaimTypes.Email)
-            ?? User.FindFirstValue("emails")
-            ?? "";
-        var name = User.FindFirstValue("name")
-            ?? User.FindFirstValue(ClaimTypes.Name)
-            ?? "Unknown";
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            return null;
 
-        return await _userService.GetOrCreateUserAsync(azureId, email, name);
+        return await _userService.GetUserByIdAsync(userId);
     }
 }

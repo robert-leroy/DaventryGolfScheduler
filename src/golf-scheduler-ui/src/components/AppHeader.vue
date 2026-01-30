@@ -1,15 +1,14 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { RouterLink } from 'vue-router';
 
+const router = useRouter();
 const authStore = useAuthStore();
-
-async function handleLogin() {
-  await authStore.login();
-}
 
 async function handleLogout() {
   await authStore.logout();
+  router.push('/');
 }
 </script>
 
@@ -34,9 +33,9 @@ async function handleLogout() {
             </button>
           </template>
           <template v-else>
-            <button @click="handleLogin" class="btn btn-primary" :disabled="authStore.loading">
+            <RouterLink to="/login" class="btn btn-primary">
               Sign In
-            </button>
+            </RouterLink>
           </template>
         </div>
       </nav>
