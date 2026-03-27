@@ -12,6 +12,15 @@ on:
     paths:
       - 'src/golf-scheduler-ui/**'
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
 
 env:
   NODE_VERSION: '20.x'
@@ -22,6 +31,8 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.action != 'closed'
     runs-on: ubuntu-latest
     name: Build and Deploy
+    environment:
+      name: "${{ github.event.inputs.environment || 'dev' }}"
 
     steps:
       - name: Checkout code
@@ -43,7 +54,7 @@ jobs:
         working-directory: ${{ env.UI_SOURCE_DIR }}
         env:
           VITE_API_URL: ${{ vars.VITE_API_URL || 'https://api-golfscheduler-dev.azurewebsites.net' }}
-          VITE_BYPASS_AUTH: ${{ vars.VITE_BYPASS_AUTH || 'true' }}
+          VITE_BYPASS_AUTH: ${{ vars.VITE_BYPASS_AUTH || 'false' }}
           VITE_B2C_CLIENT_ID: ${{ vars.VITE_B2C_CLIENT_ID }}
           VITE_B2C_AUTHORITY: ${{ vars.VITE_B2C_AUTHORITY }}
           VITE_B2C_KNOWN_AUTHORITIES: ${{ vars.VITE_B2C_KNOWN_AUTHORITIES }}
