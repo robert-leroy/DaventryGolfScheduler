@@ -42,25 +42,27 @@ async function handleCancel(id: string) {
     </section>
 
     <template v-if="authStore.isAuthenticated">
-      <section class="dashboard-chart">
-        <TeeTimeChart :tee-times="teeTimeStore.teeTimes" />
-      </section>
-      <section class="next-tee-time" v-if="!teeTimeStore.loading">
-        <h2 class="section-title">Next Tee Time</h2>
+      <div v-if="!teeTimeStore.loading" class="dashboard-top">
+        <section class="next-tee-time">
+          <h2 class="section-title">Next Tee Time</h2>
 
-        <div v-if="nextTeeTime">
-          <TeeTimeCard
-            :tee-time="nextTeeTime"
-            @register="handleRegister"
-            @cancel="handleCancel"
-          />
-        </div>
+          <div v-if="nextTeeTime">
+            <TeeTimeCard
+              :tee-time="nextTeeTime"
+              @register="handleRegister"
+              @cancel="handleCancel"
+            />
+          </div>
 
-        <div v-else class="empty-state">
-          <p>No upcoming tee times scheduled.</p>
-          <p class="text-muted text-sm">Check back later or ask an admin to add some!</p>
-        </div>
-      </section>
+          <div v-else class="empty-state">
+            <p>No upcoming tee times scheduled.</p>
+            <p class="text-muted text-sm">Check back later or ask an admin to add some!</p>
+          </div>
+        </section>
+        <section class="dashboard-chart">
+          <TeeTimeChart :tee-times="teeTimeStore.teeTimes" />
+        </section>
+      </div>
 
       <LoadingSpinner v-else text="Loading tee times..." />
 
@@ -86,8 +88,16 @@ async function handleCancel(id: string) {
 </template>
 
 <style scoped>
-.dashboard-chart {
+.dashboard-top {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
   margin-bottom: 2rem;
+}
+
+.dashboard-chart {
+  min-height: 0;
 }
 
 .hero {
@@ -128,7 +138,7 @@ async function handleCancel(id: string) {
 }
 
 .next-tee-time {
-  margin-bottom: 2rem;
+  min-width: 0;
 }
 
 .quick-links {
@@ -167,6 +177,10 @@ async function handleCancel(id: string) {
 }
 
 @media (max-width: 768px) {
+  .dashboard-top {
+    grid-template-columns: 1fr;
+  }
+
   .hero-title {
     font-size: 1.75rem;
   }

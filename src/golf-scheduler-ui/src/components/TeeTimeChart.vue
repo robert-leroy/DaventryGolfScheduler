@@ -6,10 +6,7 @@ import {
   CategoryScale,
   LinearScale,
   BarController,
-  LineController,
   BarElement,
-  LineElement,
-  PointElement,
   Title,
   Tooltip,
   Legend,
@@ -22,10 +19,7 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarController,
-  LineController,
   BarElement,
-  LineElement,
-  PointElement,
   Title,
   Tooltip,
   Legend
@@ -42,7 +36,7 @@ interface DayStats {
   takenSlots: number;
 }
 
-const chartData = computed<ChartData<'bar' | 'line', number[], string>>(() => {
+const chartData = computed<ChartData<'bar', number[], string>>(() => {
   // Aggregate tee times by day
   const byDay = new Map<string, DayStats>();
 
@@ -76,28 +70,21 @@ const chartData = computed<ChartData<'bar' | 'line', number[], string>>(() => {
     labels: sorted.map((d) => d.label),
     datasets: [
       {
-        type: 'bar' as const,
-        label: 'Total Slots',
-        data: sorted.map((d) => d.totalSlots),
+        label: 'Spots Taken',
+        data: sorted.map((d) => d.takenSlots),
+        backgroundColor: 'rgba(220, 53, 69, 0.7)',
+        borderColor: 'rgba(220, 53, 69, 1)',
+        borderWidth: 1,
+      },
+      {
+        label: 'Available',
+        data: sorted.map((d) => d.totalSlots - d.takenSlots),
         backgroundColor: 'rgba(34, 139, 34, 0.6)',
         borderColor: 'rgba(34, 139, 34, 1)',
         borderWidth: 1,
-        order: 2,
-      },
-      {
-        type: 'line' as const,
-        label: 'Spots Taken',
-        data: sorted.map((d) => d.takenSlots),
-        borderColor: 'rgba(255, 99, 132, 1)',
-        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-        borderWidth: 3,
-        pointRadius: 5,
-        pointBackgroundColor: 'rgba(255, 99, 132, 1)',
-        fill: false,
-        order: 1,
       },
     ],
-  } as ChartData<'bar' | 'line', number[], string>;
+  };
 });
 
 const chartOptions: ChartOptions<'bar'> = {
@@ -116,7 +103,11 @@ const chartOptions: ChartOptions<'bar'> = {
     },
   },
   scales: {
+    x: {
+      stacked: true,
+    },
     y: {
+      stacked: true,
       beginAtZero: true,
       title: {
         display: true,

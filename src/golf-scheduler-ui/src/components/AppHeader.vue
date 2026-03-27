@@ -16,7 +16,10 @@ async function handleLogout() {
   <header class="header">
     <div class="container">
       <nav class="nav">
-        <RouterLink to="/" class="logo">Golf Scheduler</RouterLink>
+        <RouterLink to="/" class="logo">
+          <img src="/ba10.png" alt="Logo" class="logo-img" />
+          Golf Scheduler
+        </RouterLink>
 
         <div class="nav-links" v-if="authStore.isAuthenticated">
           <RouterLink to="/tee-times" class="nav-link">Tee Times</RouterLink>
@@ -59,10 +62,18 @@ async function handleLogout() {
 }
 
 .logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--primary-color);
   text-decoration: none;
+}
+
+.logo-img {
+  height: 8rem;
+  width: auto;
 }
 
 .nav-links {

@@ -203,6 +203,11 @@ body {
 
 .page-header {
   margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .page-title {
@@ -283,4 +288,24 @@ body {
 
 .text-sm {
   font-size: 0.875rem;
+}
+
+/* Print styles */
+@media print {
+  body {
+    background-color: white;
+  }
+
+  .header {
+    display: none !important;
+  }
+
+  .main-content {
+    padding: 0 !important;
+  }
+
+  .container {
+    max-width: 100%;
+    padding: 0;
+  }
 }

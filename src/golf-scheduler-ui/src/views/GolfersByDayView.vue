@@ -45,12 +45,23 @@ function formatTime(timeString: string) {
     hour12: true,
   });
 }
+
+function printSchedule() {
+  window.print();
+}
 </script>
 
 <template>
   <div class="golfers-by-day">
     <div class="page-header">
       <h1 class="page-title">Golfers by Day</h1>
+      <button
+        v-if="golfersByDay.length > 0 && !loading"
+        class="btn btn-secondary print-btn"
+        @click="printSchedule"
+      >
+        Print Schedule
+      </button>
     </div>
 
     <div v-if="error" class="alert alert-error">
@@ -185,5 +196,67 @@ function formatTime(timeString: string) {
 .no-golfers {
   font-style: italic;
   font-size: 0.875rem;
+}
+
+/* Print styles */
+@media print {
+  .print-btn {
+    display: none !important;
+  }
+
+  .golfers-by-day {
+    padding: 0;
+  }
+
+  .page-header {
+    margin-bottom: 1rem;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    color: black;
+  }
+
+  .days-list {
+    gap: 1rem;
+  }
+
+  .day-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+
+  .day-header {
+    background: #f0f0f0 !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .day-title {
+    color: black;
+  }
+
+  .tee-time-value {
+    color: black;
+    font-weight: bold;
+  }
+
+  .golfer-item {
+    background-color: #f5f5f5 !important;
+    color: black !important;
+    border: 1px solid #ccc;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .tee-times-list {
+    padding: 0.75rem 1rem;
+  }
+
+  .tee-time-slot {
+    padding: 0.5rem 0;
+  }
 }
 </style>
