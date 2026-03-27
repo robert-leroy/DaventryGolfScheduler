@@ -59,7 +59,7 @@ resource apiApp 'Microsoft.Web/sites@2023-01-01' = {
       minTlsVersion: '1.2'
       cors: {
         allowedOrigins: [
-          'https://${staticWebAppName}.azurestaticapps.net'
+          'https://${staticWebApp.properties.defaultHostname}'
           environment == 'dev' ? 'http://localhost:5173' : ''
         ]
         supportCredentials: true
@@ -71,7 +71,7 @@ resource apiApp 'Microsoft.Web/sites@2023-01-01' = {
         }
         {
           name: 'FrontendUrl'
-          value: 'https://${staticWebAppName}.azurestaticapps.net'
+          value: 'https://${staticWebApp.properties.defaultHostname}'
         }
         {
           name: 'AzureAdB2C__Instance'
@@ -128,7 +128,7 @@ resource staticWebAppSettings 'Microsoft.Web/staticSites/config@2023-01-01' = {
     VITE_B2C_CLIENT_ID: b2cClientId
     VITE_B2C_AUTHORITY: b2cTenantName != '' ? 'https://${b2cTenantName}.b2clogin.com/${b2cTenantName}.onmicrosoft.com/B2C_1_signupsignin' : ''
     VITE_B2C_KNOWN_AUTHORITIES: b2cTenantName != '' ? '${b2cTenantName}.b2clogin.com' : ''
-    VITE_B2C_REDIRECT_URI: 'https://${staticWebAppName}.azurestaticapps.net'
+    VITE_B2C_REDIRECT_URI: 'https://${staticWebApp.properties.defaultHostname}'
   }
 }
 
