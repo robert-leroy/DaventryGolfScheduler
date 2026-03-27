@@ -65,12 +65,13 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Add CORS
+var frontendUrls = builder.Configuration.GetSection("FrontendUrls").Get<string[]>()
+    ?? [builder.Configuration.GetValue<string>("FrontendUrl") ?? "http://localhost:5173"];
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                builder.Configuration.GetValue<string>("FrontendUrl") ?? "http://localhost:5173")
+        policy.WithOrigins(frontendUrls)
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials();
