@@ -16,13 +16,16 @@ public class AuthService : IAuthService
 {
     private readonly AppDbContext _context;
     private readonly JwtSettings _jwtSettings;
+    private readonly IEmailService _emailService;
     private const int MaxFailedLoginAttempts = 5;
     private const int LockoutMinutes = 15;
+    private const int PasswordResetTokenExpirationHours = 1;
 
-    public AuthService(AppDbContext context, IOptions<JwtSettings> jwtSettings)
+    public AuthService(AppDbContext context, IOptions<JwtSettings> jwtSettings, IEmailService emailService)
     {
         _context = context;
         _jwtSettings = jwtSettings.Value;
+        _emailService = emailService;
     }
 
     public async Task<AuthResult> LoginAsync(string email, string password)
@@ -174,6 +177,47 @@ public class AuthService : IAuthService
 
         // Revoke all refresh tokens for this user (force re-login)
         await RevokeAllUserRefreshTokensAsync(userId);
+
+        return true;
+    }
+
+    public async Task ForgotPasswordAsync(string email, string frontendBaseUrl)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+        // Always return without revealing whether the email exists
+        if (user == null) return;
+
+        // Generate a secure random token
+        var tokenBytes = new byte[32];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(tokenBytes);
+        var token = Convert.ToHexString(tokenBytes).ToLowerInvariant();
+
+        user.PasswordResetToken = token;
+        user.PasswordResetTokenExpiresAt = DateTime.UtcNow.AddHours(PasswordResetTokenExpirationHours);
+        user.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        var resetLink = $"{frontendBaseUrl.TrimEnd('/')}/reset-password?token={token}";
+        await _emailService.SendPasswordResetEmailAsync(user.Email, user.DisplayName, resetLink);
+    }
+
+    public async Task<bool> ResetPasswordAsync(string token, string newPassword)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u =>
+            u.PasswordResetToken == token &&
+            u.PasswordResetTokenExpiresAt > DateTime.UtcNow);
+
+        if (user == null) return false;
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword, workFactor: 12);
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiresAt = null;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        await RevokeAllUserRefreshTokensAsync(user.Id);
 
         return true;
     }

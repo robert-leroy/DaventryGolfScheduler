@@ -78,6 +78,27 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Logged out successfully" });
     }
 
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto request, [FromServices] IConfiguration config)
+    {
+        var frontendBaseUrl = config.GetValue<string>("FrontendUrl") ?? "http://localhost:5173";
+        await _authService.ForgotPasswordAsync(request.Email, frontendBaseUrl);
+        return Ok(new { message = "If that email is a valid user for this application, you will receive a reset email shortly." });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto request)
+    {
+        var success = await _authService.ResetPasswordAsync(request.Token, request.NewPassword);
+
+        if (!success)
+        {
+            return BadRequest(new { message = "This password reset link is invalid or has expired." });
+        }
+
+        return Ok(new { message = "Password reset successfully. You can now sign in with your new password." });
+    }
+
     [Authorize]
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto request)

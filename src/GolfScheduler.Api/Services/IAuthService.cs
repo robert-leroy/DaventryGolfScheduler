@@ -9,6 +9,8 @@ public interface IAuthService
     Task<AuthResult> RegisterAsync(RegisterRequestDto request);
     Task<AuthResult> RefreshTokenAsync(string refreshToken);
     Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
+    Task ForgotPasswordAsync(string email, string frontendBaseUrl);
+    Task<bool> ResetPasswordAsync(string token, string newPassword);
     Task RevokeRefreshTokenAsync(string refreshToken);
     Task RevokeAllUserRefreshTokensAsync(Guid userId);
 }

@@ -31,3 +31,12 @@ public record ChangePasswordRequestDto(
     [Required] string CurrentPassword,
     [Required][MinLength(8)] string NewPassword
 );
+
+public record ForgotPasswordRequestDto(
+    [Required][EmailAddress] string Email
+);
+
+public record ResetPasswordRequestDto(
+    [Required] string Token,
+    [Required][MinLength(8)] string NewPassword
+);

@@ -96,6 +96,14 @@ export const authApi = {
   changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
     await apiClient.post('/api/auth/change-password', { currentPassword, newPassword });
   },
+
+  forgotPassword: async (email: string): Promise<void> => {
+    await apiClient.post('/api/auth/forgot-password', { email });
+  },
+
+  resetPassword: async (token: string, newPassword: string): Promise<void> => {
+    await apiClient.post('/api/auth/reset-password', { token, newPassword });
+  },
 };
 
 export const teeTimeApi = {

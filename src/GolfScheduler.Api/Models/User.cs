@@ -48,6 +48,13 @@ public class User
     [Column("is_admin")]
     public bool IsAdmin { get; set; } = false;
 
+    [MaxLength(255)]
+    [Column("password_reset_token")]
+    public string? PasswordResetToken { get; set; }
+
+    [Column("password_reset_token_expires_at")]
+    public DateTime? PasswordResetTokenExpiresAt { get; set; }
+
     [NotMapped]
     public string DisplayName => $"{FirstName} {LastName}".Trim();
 
