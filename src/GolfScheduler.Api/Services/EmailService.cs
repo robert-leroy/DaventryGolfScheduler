@@ -7,14 +7,16 @@ namespace GolfScheduler.Api.Services;
 
 public class EmailService : IEmailService
 {
-    private readonly EmailClient _emailClient;
     private readonly EmailSettings _emailSettings;
+    private EmailClient? _emailClient;
 
     public EmailService(IOptions<EmailSettings> emailSettings)
     {
         _emailSettings = emailSettings.Value;
-        _emailClient = new EmailClient(_emailSettings.ConnectionString);
     }
+
+    private EmailClient GetClient() =>
+        _emailClient ??= new EmailClient(_emailSettings.ConnectionString);
 
     public async Task SendPasswordResetEmailAsync(string toEmail, string displayName, string resetLink)
     {
@@ -63,6 +65,6 @@ public class EmailService : IEmailService
         var recipients = new EmailRecipients([new EmailAddress(toEmail, displayName)]);
         var message = new EmailMessage(_emailSettings.FromAddress, recipients, emailContent);
 
-        await _emailClient.SendAsync(WaitUntil.Completed, message);
+        await GetClient().SendAsync(WaitUntil.Completed, message);
     }
 }
