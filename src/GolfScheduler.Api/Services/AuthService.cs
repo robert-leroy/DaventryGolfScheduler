@@ -183,7 +183,8 @@ public class AuthService : IAuthService
 
     public async Task ForgotPasswordAsync(string email, string frontendBaseUrl)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        var normalizedEmail = email.Trim().ToLowerInvariant();
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
 
         // Always return without revealing whether the email exists
         if (user == null) return;
