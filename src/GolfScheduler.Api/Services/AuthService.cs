@@ -17,15 +17,17 @@ public class AuthService : IAuthService
     private readonly AppDbContext _context;
     private readonly JwtSettings _jwtSettings;
     private readonly IEmailService _emailService;
+    private readonly ILogger<AuthService> _logger;
     private const int MaxFailedLoginAttempts = 5;
     private const int LockoutMinutes = 15;
     private const int PasswordResetTokenExpirationHours = 1;
 
-    public AuthService(AppDbContext context, IOptions<JwtSettings> jwtSettings, IEmailService emailService)
+    public AuthService(AppDbContext context, IOptions<JwtSettings> jwtSettings, IEmailService emailService, ILogger<AuthService> logger)
     {
         _context = context;
         _jwtSettings = jwtSettings.Value;
         _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<AuthResult> LoginAsync(string email, string password)
@@ -184,12 +186,18 @@ public class AuthService : IAuthService
     public async Task ForgotPasswordAsync(string email, string frontendBaseUrl)
     {
         var normalizedEmail = email.Trim().ToLowerInvariant();
+        _logger.LogInformation("Password reset requested for email: {Email}", normalizedEmail);
+
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
 
-        // Always return without revealing whether the email exists
-        if (user == null) return;
+        if (user == null)
+        {
+            _logger.LogInformation("Password reset: no user found for email: {Email}", normalizedEmail);
+            return;
+        }
 
-        // Generate a secure random token
+        _logger.LogInformation("Password reset: user found ({UserId}), generating token", user.Id);
+
         var tokenBytes = new byte[32];
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(tokenBytes);
@@ -201,7 +209,18 @@ public class AuthService : IAuthService
         await _context.SaveChangesAsync();
 
         var resetLink = $"{frontendBaseUrl.TrimEnd('/')}/reset-password?token={token}";
-        await _emailService.SendPasswordResetEmailAsync(user.Email, user.DisplayName, resetLink);
+        _logger.LogInformation("Password reset: sending email to {Email}, reset link base: {FrontendUrl}", user.Email, frontendBaseUrl);
+
+        try
+        {
+            await _emailService.SendPasswordResetEmailAsync(user.Email, user.DisplayName, resetLink);
+            _logger.LogInformation("Password reset: email sent successfully to {Email}", user.Email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Password reset: failed to send email to {Email}", user.Email);
+            throw;
+        }
     }
 
     public async Task<bool> ResetPasswordAsync(string token, string newPassword)

@@ -72,3 +72,4 @@ coverage/
 
 # Build outputs
 publish/
+src/GolfScheduler.Api/appsettings.json
