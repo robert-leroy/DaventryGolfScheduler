@@ -25,6 +25,7 @@ async function handleLogout() {
           <RouterLink to="/tee-times" class="nav-link">Tee Times</RouterLink>
           <RouterLink to="/golfers-by-day" class="nav-link">By Day</RouterLink>
           <RouterLink to="/my-registrations" class="nav-link">My Registrations</RouterLink>
+          <RouterLink to="/my-waitlist" class="nav-link">My Waitlist</RouterLink>
           <RouterLink to="/admin" class="nav-link" v-if="authStore.isAdmin">Admin</RouterLink>
         </div>
 

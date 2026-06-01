@@ -66,4 +66,5 @@ public class User
 
     public ICollection<TeeTime> CreatedTeeTimes { get; set; } = new List<TeeTime>();
     public ICollection<Registration> Registrations { get; set; } = new List<Registration>();
+    public ICollection<WaitlistEntry> WaitlistEntries { get; set; } = new List<WaitlistEntry>();
 }

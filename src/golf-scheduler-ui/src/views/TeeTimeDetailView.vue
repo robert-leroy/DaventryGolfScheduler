@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useTeeTimeStore } from '@/stores/teeTimeStore';
+import { useWaitlistStore } from '@/stores/waitlistStore';
 import { useAuthStore } from '@/stores/authStore';
 import RegistrationList from '@/components/RegistrationList.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
@@ -10,6 +11,7 @@ import { parseLocalDate } from '@/utils/dateUtils';
 const route = useRoute();
 const router = useRouter();
 const teeTimeStore = useTeeTimeStore();
+const waitlistStore = useWaitlistStore();
 const authStore = useAuthStore();
 
 const teeTime = computed(() => teeTimeStore.currentTeeTime);
@@ -42,10 +44,10 @@ const isUserRegistered = computed(() => {
   return teeTime.value.registrations.some((r) => r.userId === authStore.user?.id);
 });
 
-const canRegister = computed(() => {
-  if (!teeTime.value) return false;
-  return teeTime.value.availableSlots > 0 && !isUserRegistered.value;
-});
+const isFull = computed(() => teeTime.value ? teeTime.value.availableSlots === 0 : false);
+const isDayFull = computed(() => teeTime.value?.isDayFull ?? false);
+const isUserRegisteredForDay = computed(() => teeTime.value?.isUserRegisteredForDay ?? false);
+const canRegister = computed(() => !isFull.value && !isUserRegistered.value && !isUserRegisteredForDay.value);
 
 onMounted(async () => {
   const id = route.params.id as string;
@@ -60,6 +62,16 @@ async function handleRegister() {
 async function handleCancel() {
   if (!teeTime.value) return;
   await teeTimeStore.cancelRegistration(teeTime.value.id);
+}
+
+async function handleJoinWaitlist() {
+  if (!teeTime.value) return;
+  await waitlistStore.joinWaitlist(teeTime.value.id);
+}
+
+async function handleLeaveWaitlist() {
+  if (!teeTime.value) return;
+  await waitlistStore.leaveWaitlist(teeTime.value.id);
 }
 
 function goBack() {
@@ -94,6 +106,11 @@ function goBack() {
             </span>
           </div>
 
+          <div v-if="teeTime.waitlistCount > 0" class="detail-item">
+            <span class="label">Waitlist:</span>
+            <span class="badge badge-warning">{{ teeTime.waitlistCount }} waiting</span>
+          </div>
+
           <div v-if="teeTime.notes" class="detail-item">
             <span class="label">Notes:</span>
             <p class="notes">{{ teeTime.notes }}</p>
@@ -114,6 +131,9 @@ function goBack() {
           >
             Cancel My Registration
           </button>
+          <span v-else-if="isUserRegisteredForDay" class="text-muted">
+            You already have a tee time booked for this day
+          </span>
           <button
             v-else-if="canRegister"
             @click="handleRegister"
@@ -122,9 +142,35 @@ function goBack() {
           >
             Register for This Tee Time
           </button>
-          <span v-else-if="!isUserRegistered" class="text-muted">
-            This tee time is full
-          </span>
+          <template v-else-if="isFull && !isUserRegistered">
+            <div class="waitlist-actions" v-if="isDayFull">
+              <button
+                v-if="teeTime.isUserOnWaitlist"
+                @click="handleLeaveWaitlist"
+                class="btn btn-outline"
+                :disabled="waitlistStore.loading"
+              >
+                Leave Waitlist
+              </button>
+              <button
+                v-else
+                @click="handleJoinWaitlist"
+                class="btn btn-warning"
+                :disabled="waitlistStore.loading"
+              >
+                Join Waitlist for This Day
+              </button>
+              <span v-if="teeTime.isUserOnWaitlist" class="waitlist-position text-muted">
+                You are #{{ teeTime.waitlistPosition }} on the waitlist for this day
+              </span>
+              <span v-else class="text-muted text-sm">
+                All tee times today are full — join the day's waitlist
+              </span>
+            </div>
+            <span v-else class="text-muted">
+              This tee time is full — other times today may still have spots
+            </span>
+          </template>
         </div>
       </div>
 
@@ -189,5 +235,26 @@ function goBack() {
 .actions {
   padding-top: 1rem;
   border-top: 1px solid var(--border-color);
+}
+
+.waitlist-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.waitlist-position {
+  font-size: 0.875rem;
+}
+
+.btn-warning {
+  background-color: var(--warning-color, #f59e0b);
+  color: white;
+  border: none;
+}
+
+.btn-warning:hover:not(:disabled) {
+  background-color: var(--warning-hover-color, #d97706);
 }
 </style>

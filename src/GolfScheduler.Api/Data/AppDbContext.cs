@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<TeeTime> TeeTimes { get; set; } = null!;
     public DbSet<Registration> Registrations { get; set; } = null!;
     public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+    public DbSet<WaitlistEntry> WaitlistEntries { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -53,6 +54,14 @@ public class AppDbContext : DbContext
             entity.HasOne(r => r.User)
                 .WithMany(u => u.Registrations)
                 .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<WaitlistEntry>(entity =>
+        {
+            entity.HasOne(w => w.User)
+                .WithMany(u => u.WaitlistEntries)
+                .HasForeignKey(w => w.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

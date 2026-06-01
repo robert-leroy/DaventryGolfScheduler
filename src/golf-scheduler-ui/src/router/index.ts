@@ -51,6 +51,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/my-waitlist',
+      name: 'my-waitlist',
+      component: () => import('@/views/MyWaitlistView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/golfers-by-day',
       name: 'golfers-by-day',
       component: () => import('@/views/GolfersByDayView.vue'),

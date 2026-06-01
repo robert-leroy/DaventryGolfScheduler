@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { authService } from './authService';
 import type { AuthResponse, RegisterRequest } from './authService';
-import type { TeeTime, TeeTimeListItem, TeeTimeCreate, TeeTimeUpdate, User, UserProfile, UserProfileUpdate, UserCreate, UserUpdate, UserRegistration, GolfersByDay } from '@/types';
+import type { TeeTime, TeeTimeListItem, TeeTimeCreate, TeeTimeUpdate, User, UserProfile, UserProfileUpdate, UserCreate, UserUpdate, UserRegistration, GolfersByDay, WaitlistEntry } from '@/types';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -148,6 +148,25 @@ export const teeTimeApi = {
 export const registrationApi = {
   getMyRegistrations: async (): Promise<UserRegistration[]> => {
     const response = await apiClient.get<UserRegistration[]>('/api/registrations/me');
+    return response.data;
+  },
+};
+
+export const waitlistApi = {
+  joinWaitlist: async (teeTimeId: string): Promise<void> => {
+    await apiClient.post(`/api/teetimes/${teeTimeId}/waitlist`);
+  },
+
+  leaveWaitlist: async (teeTimeId: string): Promise<void> => {
+    await apiClient.delete(`/api/teetimes/${teeTimeId}/waitlist`);
+  },
+
+  leaveWaitlistByDate: async (date: string): Promise<void> => {
+    await apiClient.delete(`/api/waitlist/day/${date}`);
+  },
+
+  getMyWaitlist: async (): Promise<WaitlistEntry[]> => {
+    const response = await apiClient.get<WaitlistEntry[]>('/api/waitlist/my');
     return response.data;
   },
 };

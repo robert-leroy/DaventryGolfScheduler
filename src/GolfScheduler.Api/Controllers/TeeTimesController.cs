@@ -36,7 +36,35 @@ public class TeeTimesController : ControllerBase
             .Where(t => t.TeeDate >= today)
             .OrderBy(t => t.TeeDate)
             .ThenBy(t => t.TeeTimeValue)
-            .Select(t => new TeeTimeListDto(
+            .ToListAsync();
+
+        var activeDates = teeTimes.Select(t => t.TeeDate).Distinct().ToList();
+        var waitlistEntries = await _context.WaitlistEntries
+            .Where(w => activeDates.Contains(w.TeeDate))
+            .OrderBy(w => w.JoinedAt)
+            .ToListAsync();
+
+        var teeTimesByDate = teeTimes.GroupBy(t => t.TeeDate)
+            .ToDictionary(g => g.Key, g => g.ToList());
+        var waitlistByDate = waitlistEntries.GroupBy(w => w.TeeDate)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var userRegisteredDates = teeTimes
+            .Where(t => t.Registrations.Any(r => r.UserId == currentUser.Id))
+            .Select(t => t.TeeDate)
+            .ToHashSet();
+
+        var result = teeTimes.Select(t =>
+        {
+            var dayTeeTimes = teeTimesByDate[t.TeeDate];
+            var isDayFull = dayTeeTimes.All(dt => dt.Registrations.Count >= dt.MaxPlayers);
+
+            var dayWaitlist = waitlistByDate.TryGetValue(t.TeeDate, out var wl)
+                ? wl.OrderBy(w => w.JoinedAt).ToList()
+                : new List<WaitlistEntry>();
+            var waitlistIndex = dayWaitlist.FindIndex(w => w.UserId == currentUser.Id);
+
+            return new TeeTimeListDto(
                 t.Id,
                 t.TeeDate,
                 t.TeeTimeValue,
@@ -44,11 +72,16 @@ public class TeeTimesController : ControllerBase
                 t.Notes,
                 t.Registrations.Count,
                 t.MaxPlayers - t.Registrations.Count,
-                t.Registrations.Any(r => r.UserId == currentUser.Id)
-            ))
-            .ToListAsync();
+                t.Registrations.Any(r => r.UserId == currentUser.Id),
+                userRegisteredDates.Contains(t.TeeDate),
+                isDayFull,
+                waitlistIndex >= 0,
+                waitlistIndex >= 0 ? waitlistIndex + 1 : null,
+                dayWaitlist.Count
+            );
+        }).ToList();
 
-        return Ok(teeTimes);
+        return Ok(result);
     }
 
     [HttpGet("by-day")]
@@ -84,6 +117,9 @@ public class TeeTimesController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<TeeTimeDto>> GetTeeTime(Guid id)
     {
+        var currentUser = await GetCurrentUserAsync();
+        if (currentUser == null) return Unauthorized();
+
         var teeTime = await _context.TeeTimes
             .Include(t => t.CreatedBy)
             .Include(t => t.Registrations)
@@ -91,6 +127,21 @@ public class TeeTimesController : ControllerBase
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (teeTime == null) return NotFound();
+
+        var dayTeeTimes = await _context.TeeTimes
+            .Include(t => t.Registrations)
+            .Where(t => t.TeeDate == teeTime.TeeDate)
+            .ToListAsync();
+
+        var isDayFull = dayTeeTimes.All(dt => dt.Registrations.Count >= dt.MaxPlayers);
+        var isUserRegisteredForDay = dayTeeTimes.Any(dt => dt.Registrations.Any(r => r.UserId == currentUser.Id));
+
+        var dayWaitlist = await _context.WaitlistEntries
+            .Where(w => w.TeeDate == teeTime.TeeDate)
+            .OrderBy(w => w.JoinedAt)
+            .ToListAsync();
+
+        var waitlistIndex = dayWaitlist.FindIndex(w => w.UserId == currentUser.Id);
 
         var dto = new TeeTimeDto(
             teeTime.Id,
@@ -106,7 +157,12 @@ public class TeeTimesController : ControllerBase
                 r.User.DisplayName,
                 r.RegisteredAt
             )).ToList(),
-            teeTime.MaxPlayers - teeTime.Registrations.Count
+            teeTime.MaxPlayers - teeTime.Registrations.Count,
+            isUserRegisteredForDay,
+            isDayFull,
+            waitlistIndex >= 0,
+            waitlistIndex >= 0 ? waitlistIndex + 1 : null,
+            dayWaitlist.Count
         );
 
         return Ok(dto);
@@ -143,7 +199,12 @@ public class TeeTimesController : ControllerBase
             teeTime.CreatedAt,
             MapToUserDto(currentUser),
             new List<RegistrationDto>(),
-            teeTime.MaxPlayers
+            teeTime.MaxPlayers,
+            false,
+            false,
+            false,
+            null,
+            0
         );
 
         return CreatedAtAction(nameof(GetTeeTime), new { id = teeTime.Id }, result);
@@ -183,7 +244,12 @@ public class TeeTimesController : ControllerBase
                 r.User.DisplayName,
                 r.RegisteredAt
             )).ToList(),
-            teeTime.MaxPlayers - teeTime.Registrations.Count
+            teeTime.MaxPlayers - teeTime.Registrations.Count,
+            false,
+            false,
+            false,
+            null,
+            0
         );
 
         return Ok(result);
@@ -217,6 +283,13 @@ public class TeeTimesController : ControllerBase
         if (teeTime.Registrations.Any(r => r.UserId == currentUser.Id))
             return BadRequest("Already registered for this tee time");
 
+        var alreadyRegisteredToday = await _context.Registrations
+            .Include(r => r.TeeTime)
+            .AnyAsync(r => r.UserId == currentUser.Id && r.TeeTime.TeeDate == teeTime.TeeDate);
+
+        if (alreadyRegisteredToday)
+            return BadRequest("You already have a tee time booked for this day");
+
         if (teeTime.Registrations.Count >= teeTime.MaxPlayers)
             return BadRequest("Tee time is full");
 
@@ -247,6 +320,76 @@ public class TeeTimesController : ControllerBase
             return NotFound("Registration not found");
 
         _context.Registrations.Remove(registration);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    [HttpPost("{id}/waitlist")]
+    public async Task<IActionResult> JoinWaitlist(Guid id)
+    {
+        var currentUser = await GetCurrentUserAsync();
+        if (currentUser == null) return Unauthorized();
+
+        var teeTime = await _context.TeeTimes.FindAsync(id);
+        if (teeTime == null) return NotFound();
+
+        var teeDate = teeTime.TeeDate;
+
+        // All tee times for this day must be full before joining the waitlist
+        var dayTeeTimes = await _context.TeeTimes
+            .Include(t => t.Registrations)
+            .Where(t => t.TeeDate == teeDate)
+            .ToListAsync();
+
+        if (!dayTeeTimes.All(t => t.Registrations.Count >= t.MaxPlayers))
+            return BadRequest("There are still open spots available today — register for a tee time instead");
+
+        // Must not already be registered on any tee time that day
+        var alreadyRegistered = dayTeeTimes.Any(t => t.Registrations.Any(r => r.UserId == currentUser.Id));
+        if (alreadyRegistered)
+            return BadRequest("You are already registered for a tee time today");
+
+        // Must not already be on the day's waitlist
+        var alreadyWaiting = await _context.WaitlistEntries
+            .AnyAsync(w => w.TeeDate == teeDate && w.UserId == currentUser.Id);
+        if (alreadyWaiting)
+            return BadRequest("Already on the waitlist for this day");
+
+        var entry = new WaitlistEntry
+        {
+            Id = Guid.NewGuid(),
+            TeeDate = teeDate,
+            UserId = currentUser.Id,
+            JoinedAt = DateTime.UtcNow
+        };
+
+        _context.WaitlistEntries.Add(entry);
+        await _context.SaveChangesAsync();
+
+        var position = await _context.WaitlistEntries
+            .Where(w => w.TeeDate == teeDate && w.JoinedAt <= entry.JoinedAt)
+            .CountAsync();
+
+        return Ok(new { message = "Successfully joined waitlist", position });
+    }
+
+    [HttpDelete("{id}/waitlist")]
+    public async Task<IActionResult> LeaveWaitlist(Guid id)
+    {
+        var currentUser = await GetCurrentUserAsync();
+        if (currentUser == null) return Unauthorized();
+
+        var teeTime = await _context.TeeTimes.FindAsync(id);
+        if (teeTime == null) return NotFound();
+
+        var entry = await _context.WaitlistEntries
+            .FirstOrDefaultAsync(w => w.TeeDate == teeTime.TeeDate && w.UserId == currentUser.Id);
+
+        if (entry == null)
+            return NotFound("Waitlist entry not found");
+
+        _context.WaitlistEntries.Remove(entry);
         await _context.SaveChangesAsync();
 
         return NoContent();

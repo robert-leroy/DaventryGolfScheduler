@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useTeeTimeStore } from '@/stores/teeTimeStore';
+import { useWaitlistStore } from '@/stores/waitlistStore';
 import TeeTimeCard from '@/components/TeeTimeCard.vue';
 import LoadingSpinner from '@/components/LoadingSpinner.vue';
 
 const teeTimeStore = useTeeTimeStore();
+const waitlistStore = useWaitlistStore();
 
 onMounted(async () => {
   await teeTimeStore.fetchTeeTimes();
@@ -17,6 +19,14 @@ async function handleRegister(id: string) {
 async function handleCancel(id: string) {
   await teeTimeStore.cancelRegistration(id);
 }
+
+async function handleJoinWaitlist(id: string) {
+  await waitlistStore.joinWaitlist(id);
+}
+
+async function handleLeaveWaitlist(id: string) {
+  await waitlistStore.leaveWaitlist(id);
+}
 </script>
 
 <template>
@@ -25,8 +35,8 @@ async function handleCancel(id: string) {
       <h1 class="page-title">Upcoming Tee Times</h1>
     </div>
 
-    <div v-if="teeTimeStore.error" class="alert alert-error">
-      {{ teeTimeStore.error }}
+    <div v-if="teeTimeStore.error || waitlistStore.error" class="alert alert-error">
+      {{ teeTimeStore.error || waitlistStore.error }}
     </div>
 
     <LoadingSpinner v-if="teeTimeStore.loading" text="Loading tee times..." />
@@ -44,6 +54,8 @@ async function handleCancel(id: string) {
           :tee-time="teeTime"
           @register="handleRegister"
           @cancel="handleCancel"
+          @join-waitlist="handleJoinWaitlist"
+          @leave-waitlist="handleLeaveWaitlist"
         />
       </div>
     </template>

@@ -9,7 +9,12 @@ public record TeeTimeDto(
     DateTime CreatedAt,
     UserDto CreatedBy,
     List<RegistrationDto> Registrations,
-    int AvailableSlots
+    int AvailableSlots,
+    bool IsUserRegisteredForDay,
+    bool IsDayFull,
+    bool IsUserOnWaitlist,
+    int? WaitlistPosition,
+    int WaitlistCount
 );
 
 public record TeeTimeCreateDto(
@@ -34,7 +39,12 @@ public record TeeTimeListDto(
     string? Notes,
     int RegisteredCount,
     int AvailableSlots,
-    bool IsUserRegistered
+    bool IsUserRegistered,
+    bool IsUserRegisteredForDay,
+    bool IsDayFull,
+    bool IsUserOnWaitlist,
+    int? WaitlistPosition,
+    int WaitlistCount
 );
 
 public record GolfersByDayDto(

@@ -11,6 +11,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   register: [id: string];
   cancel: [id: string];
+  joinWaitlist: [id: string];
+  leaveWaitlist: [id: string];
 }>();
 
 const formattedDate = computed(() => {
@@ -34,6 +36,8 @@ const formattedTime = computed(() => {
 });
 
 const isFull = computed(() => props.teeTime.availableSlots === 0);
+const isDayFull = computed(() => props.teeTime.isDayFull);
+const isUserRegisteredForDay = computed(() => props.teeTime.isUserRegisteredForDay);
 </script>
 
 <template>
@@ -47,6 +51,9 @@ const isFull = computed(() => props.teeTime.availableSlots === 0);
         <div class="slots">
           <span :class="['badge', isFull ? 'badge-error' : 'badge-success']">
             {{ teeTime.availableSlots }} / {{ teeTime.maxPlayers }} spots available
+          </span>
+          <span v-if="teeTime.waitlistCount > 0" class="badge badge-warning waitlist-badge">
+            {{ teeTime.waitlistCount }} waiting
           </span>
         </div>
         <p v-if="teeTime.notes" class="notes text-muted text-sm">{{ teeTime.notes }}</p>
@@ -63,6 +70,10 @@ const isFull = computed(() => props.teeTime.availableSlots === 0);
         >
           Cancel
         </button>
+        <span
+          v-else-if="isUserRegisteredForDay"
+          class="text-muted text-sm"
+        >Already booked today</span>
         <button
           v-else-if="!isFull"
           @click="emit('register', teeTime.id)"
@@ -70,6 +81,22 @@ const isFull = computed(() => props.teeTime.availableSlots === 0);
         >
           Register
         </button>
+        <template v-else-if="isDayFull">
+          <button
+            v-if="teeTime.isUserOnWaitlist"
+            @click="emit('leaveWaitlist', teeTime.id)"
+            class="btn btn-outline waitlist-leave"
+          >
+            Leave Waitlist ({{ teeTime.waitlistPosition }})
+          </button>
+          <button
+            v-else
+            @click="emit('joinWaitlist', teeTime.id)"
+            class="btn btn-warning"
+          >
+            Join Waitlist
+          </button>
+        </template>
         <span v-else class="text-muted text-sm">Full</span>
       </div>
     </div>
@@ -108,7 +135,14 @@ const isFull = computed(() => props.teeTime.availableSlots === 0);
 }
 
 .slots {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
   margin-bottom: 0.5rem;
+}
+
+.waitlist-badge {
+  font-size: 0.75rem;
 }
 
 .notes {
@@ -119,5 +153,19 @@ const isFull = computed(() => props.teeTime.availableSlots === 0);
   display: flex;
   gap: 0.5rem;
   align-items: center;
+}
+
+.btn-warning {
+  background-color: var(--warning-color, #f59e0b);
+  color: white;
+  border: none;
+}
+
+.btn-warning:hover {
+  background-color: var(--warning-hover-color, #d97706);
+}
+
+.waitlist-leave {
+  font-size: 0.875rem;
 }
 </style>

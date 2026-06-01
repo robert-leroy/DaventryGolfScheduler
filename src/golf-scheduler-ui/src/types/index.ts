@@ -49,6 +49,18 @@ export interface TeeTime {
   createdBy: User;
   registrations: Registration[];
   availableSlots: number;
+  isUserRegisteredForDay: boolean;
+  isDayFull: boolean;
+  isUserOnWaitlist: boolean;
+  waitlistPosition: number | null;
+  waitlistCount: number;
+}
+
+export interface WaitlistEntry {
+  id: string;
+  teeDate: string;
+  joinedAt: string;
+  position: number;
 }
 
 export interface TeeTimeListItem {
@@ -60,6 +72,11 @@ export interface TeeTimeListItem {
   registeredCount: number;
   availableSlots: number;
   isUserRegistered: boolean;
+  isUserRegisteredForDay: boolean;
+  isDayFull: boolean;
+  isUserOnWaitlist: boolean;
+  waitlistPosition: number | null;
+  waitlistCount: number;
 }
 
 export interface TeeTimeCreate {

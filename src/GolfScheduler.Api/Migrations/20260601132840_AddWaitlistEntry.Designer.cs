@@ -3,6 +3,7 @@ using System;
 using GolfScheduler.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GolfScheduler.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260601132840_AddWaitlistEntry")]
+    partial class AddWaitlistEntry
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -225,9 +228,9 @@ namespace GolfScheduler.Api.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("joined_at");
 
-                    b.Property<DateOnly>("TeeDate")
-                        .HasColumnType("date")
-                        .HasColumnName("tee_date");
+                    b.Property<Guid>("TeeTimeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tee_time_id");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
@@ -237,7 +240,7 @@ namespace GolfScheduler.Api.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex("TeeDate", "UserId")
+                    b.HasIndex("TeeTimeId", "UserId")
                         .IsUnique();
 
                     b.ToTable("waitlist_entries");
@@ -286,11 +289,19 @@ namespace GolfScheduler.Api.Migrations
 
             modelBuilder.Entity("GolfScheduler.Api.Models.WaitlistEntry", b =>
                 {
+                    b.HasOne("GolfScheduler.Api.Models.TeeTime", "TeeTime")
+                        .WithMany("WaitlistEntries")
+                        .HasForeignKey("TeeTimeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("GolfScheduler.Api.Models.User", "User")
                         .WithMany("WaitlistEntries")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("TeeTime");
 
                     b.Navigation("User");
                 });
@@ -298,6 +309,8 @@ namespace GolfScheduler.Api.Migrations
             modelBuilder.Entity("GolfScheduler.Api.Models.TeeTime", b =>
                 {
                     b.Navigation("Registrations");
+
+                    b.Navigation("WaitlistEntries");
                 });
 
             modelBuilder.Entity("GolfScheduler.Api.Models.User", b =>
